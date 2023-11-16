@@ -93,6 +93,7 @@ fn write_images(bvh: &RTree) {
 //pub fn export(filename: &str, objs: &Vec<TriObject>) {
 pub fn export(filename: &str, rtree: &RTree) {
     let out_location = "./Textured/";
+    fs::create_dir_all("./Textured/images");
     println!("Exporitng to {}", out_location);
     //let filename = "ReflectionTestWithCube"; // Adjust filename as necessary
     let mtl_file_name = format!("{}", filename);

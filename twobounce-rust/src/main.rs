@@ -6,6 +6,7 @@ mod pencilsource;
 mod pointdetector;
 mod pointsource;
 //mod rtree;
+mod ringdetector;
 mod rtree2;
 mod scene;
 mod triangle;
@@ -15,6 +16,7 @@ use crate::export::*;
 use crate::pointdetector::*;
 use crate::pointsource::*;
 //use crate::rtree::RTree;
+use crate::ringdetector::RingDetector;
 use crate::rtree2::*;
 use crate::triangle::*;
 use crate::{diskdetector::DiskDetector, pencilsource::*};
@@ -93,47 +95,55 @@ fn main() {
 
     let mut rtree = RTree::new(tris, 6000);
 
+    let PENCIL_CENTER = 4.5; //scaled
+    let PENCIL_LENGTH = 1.2469;
+
     let st = Vector {
-        x: 5.0,
-        y: 0.0,
-        z: -1.0,
+        x: 0.0,
+        y: PENCIL_CENTER + PENCIL_LENGTH / 2.0,
+        z: 0.0,
     };
     let end = Vector {
-        x: 5.0,
-        y: 0.0,
-        z: 1.0,
+        //closer to origin
+        x: 0.0,
+        y: PENCIL_CENTER - PENCIL_LENGTH / 2.0,
+        z: 0.0,
     };
-    //let src = PencilSource {
-    //start: st,
-    //end: end,
-    //};
-    let src = PointSource {
-        position: Vector::new(-49.0, 0.0, 0.0),
+    let src = PencilSource {
+        start: st,
+        end: end,
     };
 
-    let test_pt = Vector::new(3.36, -2.80, -1.614804);
     let norm = Vector::new(1.0, 0.0, 0.0);
-    let det = DiskDetector::new(
-        7.0,
-        Vector {
-            x: -39.0,
-            y: -39.0,
-            z: 7.0,
-        },
-        norm,
-        10,
-    );
 
     let pt_det = PointDetector {
-        center: Vector::new(70.0, 30.0, 0.0),
+        center: Vector::new(0.0, -10.0, 1.0),
     };
 
-    //let dir = Vector::new();
-    let r = det.is_visible(&rtree, test_pt);
-    //println!("Detector points: {:?}", det.surface_points);
-    rtree.twobounce(nrays, 1, pt_det, src);
+    let ring_det = RingDetector::new(
+        1.0,
+        Vector::new(0.0, -21.7, 0.0),
+        Vector::new(0.0, 1.0, 0.0),
+        7,
+    );
+
+    //TWOBOUCNE ROUND 1
+    println!("Starting twobounce on Pencil source");
+    rtree.twobounce(&ring_det, src.get_emission_rays(nrays, 6));
+    println!("Done with Pencil source");
+
+    println!("Starting twobounce on Cone source");
+    let src2 = ConeSource::new(end, Vector::new(0.0, -1.0, 0.0), 0.203);
+    println!("Done with Cone source");
+
+    rtree.twobounce(
+        &ring_det,
+        src2.get_emission_rays((nrays as f32 / 4.0) as usize, 6),
+    );
+
     match filename.strip_suffix(".obj") {
         Some(f) => {
+            println!("Starting export");
             export(f, &rtree);
         }
         None => println!("File name error"),

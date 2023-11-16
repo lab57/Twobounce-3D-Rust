@@ -3,6 +3,7 @@ use crate::diskdetector::*;
 use crate::pencilsource::*;
 use crate::pointdetector::PointDetector;
 use crate::pointsource::*;
+use crate::ringdetector::RingDetector;
 use crate::triangle::*;
 use crate::vector::{Vector, Vector2};
 use crate::ObjectLoader::load_obj;
@@ -93,8 +94,13 @@ impl RTree {
         self.texture[x][y] = status;
     }
 
-    pub fn twobounce(&mut self, n: usize, ncores: i32, det: PointDetector, source: PointSource) {
-        let vector_sets = source.get_emission_rays(n, 6);
+    pub fn get_pixel_status(&self, hit: &Hit) -> u8 {
+        let (x, y) = self.get_pixel(&hit);
+        self.texture[x][y]
+    }
+
+    pub fn twobounce(&mut self, det: &RingDetector, vector_sets: Vec<Vec<(Vector, Vector)>>) {
+        //let vector_sets = source.get_emission_rays(n, 6);
         let mut vis_to_source: Vec<Hit> = Vec::new();
         println!("Beginning twobounce");
         println!("Starting source visiblity check");
@@ -106,7 +112,9 @@ impl RTree {
                 match hit {
                     Some(hit) => {
                         //println!("Hit!");
-                        self.set_pixel(&hit, 1);
+                        if (self.get_pixel_status(&hit) == 0) {
+                            self.set_pixel(&hit, 1);
+                        }
                         // println!("normal: {:?}", hit.tri.normal);
                         let tri = &self.triangles[hit.tri];
                         if (tri.normal.x != 0.0) {
