@@ -128,18 +128,21 @@ fn main() {
     );
 
     //TWOBOUCNE ROUND 1
-    println!("Starting twobounce on Pencil source");
+    println!("Starting twobounce on Pencil source with {} rays", nrays);
     rtree.twobounce(&ring_det, src.get_emission_rays(nrays, 6));
     println!("Done with Pencil source");
 
-    println!("Starting twobounce on Cone source");
+    println!(
+        "Starting twobounce on Cone source with {} rays",
+        (nrays as f32 / 4.0)
+    );
     let src2 = ConeSource::new(end, Vector::new(0.0, -1.0, 0.0), 0.203);
-    println!("Done with Cone source");
 
     rtree.twobounce(
         &ring_det,
         src2.get_emission_rays((nrays as f32 / 4.0) as usize, 6),
     );
+    println!("Done with Cone source");
 
     match filename.strip_suffix(".obj") {
         Some(f) => {
