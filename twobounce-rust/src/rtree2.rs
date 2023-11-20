@@ -13,7 +13,7 @@ use bvh::{Point3, Vector3};
 use std::collections::HashSet;
 use std::f32;
 use std::rc::Rc;
-
+#[derive(Clone)]
 pub struct RTree {
     pub bvh: BVH,
     pub texture: Vec<Vec<u8>>,

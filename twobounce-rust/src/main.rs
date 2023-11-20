@@ -28,6 +28,11 @@ use triangle::Triangle;
 use vector::{Vector, Vector2};
 use ObjectLoader::load_obj;
 
+fn runMT(mut rtree: &RTree, det: RingDetector, raySet: Vec<(Vector, Vector)>) {
+    //tree.twobounce(&det, vec![raySet]);
+    let r = rtree.clone();
+}
+
 fn main() {
     let RES = 7000;
     let SCALE = 10.0;
