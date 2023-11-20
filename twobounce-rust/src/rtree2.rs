@@ -10,6 +10,7 @@ use crate::ObjectLoader::load_obj;
 use bvh::bvh::BVH;
 use bvh::ray::Ray;
 use bvh::{Point3, Vector3};
+use std::collections::HashSet;
 use std::f32;
 use std::rc::Rc;
 
@@ -104,6 +105,7 @@ impl RTree {
         let mut vis_to_source: Vec<Hit> = Vec::new();
         println!("Beginning twobounce");
         println!("Starting source visiblity check");
+        let mut alreadyChecked: HashSet<(usize, usize)> = HashSet::new();
         for core in vector_sets {
             for vector in core {
                 let hit = self.check_intersections(vector.0, vector.1);
@@ -120,7 +122,10 @@ impl RTree {
                         if (tri.normal.x != 0.0) {
                             let h2 = self.check_intersections(vector.0, vector.1);
                         }
-                        vis_to_source.push(hit);
+                        if (!alreadyChecked.contains(&self.get_pixel(&hit))) {
+                            alreadyChecked.insert(self.get_pixel(&hit));
+                            vis_to_source.push(hit);
+                        }
                     }
                     None => {} //hit missed
                 }
@@ -129,29 +134,10 @@ impl RTree {
         println!("Completed source visibility check");
         println!("Starting detector visibility check");
         let mut vis_to_det: Vec<Hit> = Vec::new();
+        println!("{} points to check det visibility", vis_to_source.len());
         for hit in vis_to_source {
-            //     // if det.is_visible(self, hit.cartesian()) {
-            //     //     self.set_pixel(&hit, 2);
-            //     //     vis_to_det.push(hit);
-            //     // }
-            //     let tri = &self.triangles[hit.tri];
-            //     let norm = tri.normal;
-            //     let cart = hit.cartesian();
-
-            //     let mut sawDet = false;
-            //     for point in &det.surface_points {
-            //         let source = cart + norm * 0.0000001;
-            //         let dir = *point - source;
-            //         match self.check_intersections(source.clone(), dir.clone()) {
-            //             Some(new) => {}
-            //             _ => {
-            //                 sawDet = true;
-            //             }
-            //         }
-            //     }
             let source = hit.cartesian() + self.triangles[hit.tri].normal * 0.0001; //plus epsilon
             if (det.is_visible(&self, source)) {
-                //println!("Status 2");
                 self.set_pixel(&hit, 2);
                 vis_to_det.push(hit);
             }

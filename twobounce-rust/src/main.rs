@@ -22,62 +22,23 @@ use crate::triangle::*;
 use crate::{diskdetector::DiskDetector, pencilsource::*};
 use std::env;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use std::thread;
 use triangle::Triangle;
 use vector::{Vector, Vector2};
 use ObjectLoader::load_obj;
 
-fn debug() {
-    env::set_var("RUST_BACKTRACE", "1");
-    let filename = "fusion-two.obj";
-
-    let (tris) = load_obj("./", filename);
-    let r: Vec<Rc<Triangle>>;
-
-    let mut rtree = RTree::new(tris, 1000);
-
-    let st = Vector {
-        x: 5.0,
-        y: 0.0,
-        z: -1.0,
-    };
-    let end = Vector {
-        x: 5.0,
-        y: 0.0,
-        z: 1.0,
-    };
-    //let src = PencilSource {
-    //start: st,
-    //end: end,
-    //};
-    let src = PointSource {
-        position: Vector::new(0.0, 0.0, 0.0),
-    };
-
-    let test_pt = Vector::new(3.36, -2.80, -1.614804);
-    let norm = Vector::new(1.0, 0.0, 0.0);
-    let det = DiskDetector::new(
-        7.0,
-        Vector {
-            x: -39.0,
-            y: -39.0,
-            z: 7.0,
-        },
-        norm,
-        10,
-    );
-
-    let pt_det = PointDetector {
-        center: Vector::new(-39.0, -39.0, 7.0),
-    };
-
-    println!(
-        "{}",
-        pt_det.is_visible(&rtree, Vector::new(-26.1, 35.8, -5.66))
-    )
-}
-
 fn main() {
+    let RES = 7000;
+    let SCALE = 10.0;
+    let PENCIL_CENTER = SCALE * 0.45; //scaled
+    let PENCIL_LENGTH = SCALE * 0.12469;
+
+    let DET_RADIUS = 1.0;
+    let DET_CENTER = Vector::new(0.0, -21.7, 0.0);
+    let DET_PT_CNT = 24;
     //let filename = "moller2.obj";
+
     let args: Vec<String> = env::args().collect();
 
     if (args.len() < 3) {
@@ -92,11 +53,9 @@ fn main() {
 
     let (tris) = load_obj("./", filename);
     let r: Vec<Rc<Triangle>>;
-
-    let mut rtree = RTree::new(tris, 6000);
-
-    let PENCIL_CENTER = 4.5; //scaled
-    let PENCIL_LENGTH = 1.2469;
+    println!("Building BVH tree with {} triangles", tris.len());
+    let mut rtree = RTree::new(tris, RES);
+    println!("Done");
 
     let st = Vector {
         x: 0.0,
@@ -114,21 +73,16 @@ fn main() {
         end: end,
     };
 
-    let norm = Vector::new(1.0, 0.0, 0.0);
-
-    let pt_det = PointDetector {
-        center: Vector::new(0.0, -10.0, 1.0),
-    };
-
     let ring_det = RingDetector::new(
-        1.0,
-        Vector::new(0.0, -21.7, 0.0),
+        DET_RADIUS,
+        DET_CENTER,
         Vector::new(0.0, 1.0, 0.0),
-        7,
+        DET_PT_CNT,
     );
 
     //TWOBOUCNE ROUND 1
     println!("Starting twobounce on Pencil source with {} rays", nrays);
+
     rtree.twobounce(&ring_det, src.get_emission_rays(nrays, 6));
     println!("Done with Pencil source");
 

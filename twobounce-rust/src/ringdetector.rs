@@ -12,6 +12,7 @@ pub struct RingDetector {
 impl RingDetector {
     pub fn new(r: f32, center: Vector, normal: Vector, k: usize) -> Self {
         let ring_points = RingDetector::get_ring_points(r, center, normal, k);
+        println!("det points {:?}", ring_points);
         RingDetector {
             r,
             center,

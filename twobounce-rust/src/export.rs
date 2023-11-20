@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 use std::rc::Rc;
+use std::time::{SystemTime, UNIX_EPOCH};
 struct Color {
     r: u8,
     g: u8,
@@ -28,7 +29,7 @@ fn strip_material_information(lines: Vec<String>) -> Vec<String> {
         .collect()
 }
 
-fn get_mat_lines(mtl_name: &str, location: &str) -> Vec<String> {
+fn get_mat_lines(mtl_name: &str, location: &str, timestamp: u128) -> Vec<String> {
     vec![
         format!("\nnewmtl {}", mtl_name),
         "Ns 250.000000".to_string(),
@@ -39,15 +40,16 @@ fn get_mat_lines(mtl_name: &str, location: &str) -> Vec<String> {
         "Ni 1.450000".to_string(),
         "d 1.000000".to_string(),
         "illum 2".to_string(),
-        format!("map_Kd ./images/{}.png", location),
+        format!("map_Kd ./images/{}{}.png", location, timestamp),
     ]
 }
 
-fn write_new_mtl(out_location: &str, mtl_file_name: &str) -> io::Result<()> {
+fn write_new_mtl(out_location: &str, mtl_file_name: &str, timestamp: u128) -> io::Result<()> {
     println!("Writing file {}{}.mtl", out_location, mtl_file_name);
+
     let path = format!("{}{}.mtl", out_location, mtl_file_name);
     let mut file = File::create(path)?;
-    for line in get_mat_lines("main_mat", "material") {
+    for line in get_mat_lines("main_mat", "material", timestamp) {
         writeln!(file, "{}", line)?;
     }
     Ok(())
@@ -69,11 +71,11 @@ fn get_color(status: u8) -> (u8, u8, u8) {
     };
 }
 
-fn write_images(bvh: &RTree) {
+fn write_images(bvh: &RTree, timestamp: u128) {
     let resolution = bvh.resolution;
     //let texture = bvh.texture;
 
-    println!("Writing ./Textured/images/material.png");
+    println!("Writing ./Textured/images/material{}.png", timestamp);
 
     let mut img = ImageBuffer::new(resolution as u32, resolution as u32);
     for x in 0..resolution {
@@ -86,7 +88,7 @@ fn write_images(bvh: &RTree) {
 
     let dyn_image = DynamicImage::ImageRgb8(img);
     dyn_image
-        .save(format!("./Textured/images/material.png"))
+        .save(format!("./Textured/images/material{}.png", timestamp))
         .unwrap();
 }
 
@@ -137,13 +139,18 @@ pub fn export(filename: &str, rtree: &RTree) {
             do_join = true;
         }
     }
+    let timestamp;
+    match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(n) => timestamp = n.as_millis(),
+        Err(_) => panic!("time error?"),
+    }
 
     //println!("Objs: {:?}", objects);
-    write_new_mtl(out_location, &mtl_file_name).expect("Failed to write new MTL file");
+    write_new_mtl(out_location, &mtl_file_name, timestamp).expect("Failed to write new MTL file");
 
     write_new_obj(out_location, filename, new_file).expect("Failed to write new OBJ file");
 
     // Here, replace `Vec::new()` with your vector of TriObject instances.
     // Ensure to define and populate your TriObject instances with the necessary data before this point.
-    write_images(rtree);
+    write_images(rtree, timestamp);
 }
